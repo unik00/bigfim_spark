@@ -8,7 +8,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ItemReaderReducerMultipleOutputs implements Serializable {
-    public List<Tuple2<Writable, Writable>> OSingletonsOrder, OSingletonsDistribution, OSingletonsTids, shortFis;
+    public List<Tuple2<Integer, String>> OSingletonsOrder;
+    public List<Tuple2<String, String>> OSingletonsDistribution;
+    public List<Tuple2<Integer, int[][]>> OSingletonsTids;
+    public List<Tuple2<Integer, String>> shortFis;
 
     public ItemReaderReducerMultipleOutputs(){
         OSingletonsDistribution = new ArrayList<>();

@@ -20,15 +20,17 @@ import org.apache.hadoop.io.ArrayWritable;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Writable;
 
+import java.io.Serializable;
 import java.util.Arrays;
 
 /**
  * Provides easy access to IntArrayWritables
  */
-public class IntArrayWritable extends ArrayWritable {
+public class IntArrayWritable extends ArrayWritable implements Serializable {
   
   public final static IntArrayWritable EmptyIaw = new IntArrayWritable(new IntWritable[0]);
-  
+
+
   public static IntArrayWritable of(int[] is) {
     if (is == null) {
       return EmptyIaw;

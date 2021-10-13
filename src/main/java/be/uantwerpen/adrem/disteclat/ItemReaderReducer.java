@@ -101,7 +101,7 @@ public class ItemReaderReducer {
 //    numberOfMappers = parseInt(conf.get(NUMBER_OF_MAPPERS_KEY, "1"));
 //    minSup = conf.getInt(MIN_SUP_KEY, -1);
     minSup = 1;
-    numberOfMappers = 10;
+    numberOfMappers = 5;
 //    shortFisFilename = createPath(getJobAbsoluteOutputDir(context), OShortFIs, OShortFIs + "-1");
   }
   
@@ -128,7 +128,6 @@ public class ItemReaderReducer {
         tidList = new IntArrayWritable[numberOfMappers];
         Arrays.fill(tidList, new IntArrayWritable(new IntWritable[0]));
         map.put(item, tidList);
-        System.out.println("clgt????????????????");
         itemSupports.put(item, new MutableInt());
       }
       IntWritable[] mapperTids = (IntWritable[]) tidList[mapperId].get();
@@ -159,11 +158,11 @@ public class ItemReaderReducer {
       
       // write the item to the short fis file
 //      mos.write(new IntWritable(1), new Text(item + "(" + support + ")"), shortFisFilename);
-      outputs.shortFis.add(new Tuple2<>(new IntWritable(1), new Text(item + "(" + support + ")")));
+      outputs.shortFis.add(new Tuple2<>(1, new Text(item + "(" + support + ")").toString()));
 
       // write the item with the tidlist
 //      mos.write(OSingletonsTids, new IntWritable(item), new IntMatrixWritable(tids));
-      outputs.OSingletonsTids.add(new Tuple2<>(new IntWritable(item), new IntMatrixWritable(tids)));
+      outputs.OSingletonsTids.add(new Tuple2<>(item, (new IntMatrixWritable(tids)).toIntMatrix() ));
     }
   }
   
@@ -215,7 +214,7 @@ public class ItemReaderReducer {
     
     Text order = new Text(builder.substring(0, builder.length() - 1));
 //    mos.write(OSingletonsOrder, EmptyKey, order);
-    outputs.OSingletonsOrder.add(new Tuple2<>(EmptyKey, order));
+    outputs.OSingletonsOrder.add(new Tuple2<>(-1, order.toString()));
   }
   
   /**
@@ -243,7 +242,7 @@ public class ItemReaderReducer {
       mapperId.set("" + ix);
       assignedItems.set(sb.substring(0, sb.length() - 1));
 //      mos.write(OSingletonsDistribution, mapperId, assignedItems);
-      outputs.OSingletonsDistribution.add(new Tuple2<>(mapperId, assignedItems));
+      outputs.OSingletonsDistribution.add(new Tuple2<>(mapperId.toString(), assignedItems.toString()));
     }
   }
 }
