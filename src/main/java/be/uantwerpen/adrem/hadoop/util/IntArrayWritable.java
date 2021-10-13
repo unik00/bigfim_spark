@@ -20,6 +20,8 @@ import org.apache.hadoop.io.ArrayWritable;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Writable;
 
+import java.util.Arrays;
+
 /**
  * Provides easy access to IntArrayWritables
  */
@@ -62,7 +64,16 @@ public class IntArrayWritable extends ArrayWritable {
     this();
     set(iw);
   }
-  
+
+  public int[] toIntArray(){
+    IntWritable[] values = (IntWritable[]) get();
+    int[] ret = new int[values.length];
+    for(int i = 0; i < values.length; i++) {
+      ret[i] = values[i].get();
+    }
+    return ret;
+  }
+
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();

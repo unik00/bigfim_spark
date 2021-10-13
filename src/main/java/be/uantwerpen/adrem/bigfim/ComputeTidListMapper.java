@@ -139,7 +139,7 @@ public class ComputeTidListMapper {
   
   private final IntArrayWritable iaw;
 
-  public List<Tuple2<Text, IntArrayWritable>> result = new ArrayList<>();
+  public List<Tuple2<String, int[]>> result = new ArrayList<>();
 
   private Set<Integer> singletons;
   private final ItemSetTrie countTrie;
@@ -161,10 +161,10 @@ public class ComputeTidListMapper {
     phase = 1;
   }
   
-  public void setup(JavaSparkContext context) throws IOException {
-    SparkConf conf = context.getConf();
-    delimiter = conf.get(DELIMITER_KEY, " ");
-
+  public void setup() throws IOException {
+//    SparkConf conf = context.getConf();
+//    delimiter = conf.get(DELIMITER_KEY, " ");
+    delimiter = " ";
     // TODO: for BigFIM
 /*
     Path[] localCacheFiles = getLocalCacheFiles(conf);
@@ -259,7 +259,9 @@ public class ComputeTidListMapper {
           }
           iaw.set(iw);
 //          context.write(key, iaw);
-          result.add(new Tuple2<Text, IntArrayWritable>(key, iaw));
+          result.add(new Tuple2<>(key.toString(), iaw.toIntArray()));
+          System.out.println("key: " + key + ", iaw: " + iaw);
+
           tids.clear();
         } else {
           builder.append(recTrie.id).append(" ");

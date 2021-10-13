@@ -5,7 +5,7 @@ import org.junit.Test;
 public class DistEclatSparkDriverTest {
 
     @Test
-    protected void runMiner(String inputFile) throws Exception {
+    public void runMiner()  {
         DistEclatSparkDriver.main(new String[]{"chess.dat.txt", "2000", "1"});
     }
 }
