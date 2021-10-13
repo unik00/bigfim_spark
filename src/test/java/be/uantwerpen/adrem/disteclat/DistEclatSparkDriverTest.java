@@ -6,6 +6,6 @@ public class DistEclatSparkDriverTest {
 
     @Test
     public void runMiner()  {
-        DistEclatSparkDriver.main(new String[]{"chess.dat.txt", "2000", "1"});
+        DistEclatSparkDriver.main(new String[]{"retail.dat", "10000", "1"});
     }
 }

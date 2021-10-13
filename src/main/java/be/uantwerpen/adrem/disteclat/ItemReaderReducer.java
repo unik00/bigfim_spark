@@ -16,36 +16,21 @@
  */
 package be.uantwerpen.adrem.disteclat;
 
-import static be.uantwerpen.adrem.disteclat.DistEclatDriver.OShortFIs;
-import static be.uantwerpen.adrem.disteclat.DistEclatDriver.OSingletonsDistribution;
-import static be.uantwerpen.adrem.disteclat.DistEclatDriver.OSingletonsOrder;
-import static be.uantwerpen.adrem.disteclat.DistEclatDriver.OSingletonsTids;
-import static be.uantwerpen.adrem.hadoop.util.Tools.createPath;
-import static be.uantwerpen.adrem.hadoop.util.Tools.getJobAbsoluteOutputDir;
-import static be.uantwerpen.adrem.util.FIMOptions.MIN_SUP_KEY;
-import static be.uantwerpen.adrem.util.FIMOptions.NUMBER_OF_MAPPERS_KEY;
-import static com.google.common.collect.Lists.newArrayList;
-import static com.google.common.collect.Maps.newHashMap;
-import static java.lang.Integer.parseInt;
-
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-
+import be.uantwerpen.adrem.hadoop.util.IntArrayWritable;
+import be.uantwerpen.adrem.hadoop.util.IntMatrixWritable;
 import org.apache.commons.lang.mutable.MutableInt;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.Writable;
-import org.apache.hadoop.mapreduce.Reducer;
-import org.apache.hadoop.mapreduce.lib.output.MultipleOutputs;
+import scala.Int;
+import scala.Tuple2;
 
-import be.uantwerpen.adrem.hadoop.util.IntArrayWritable;
-import be.uantwerpen.adrem.hadoop.util.IntMatrixWritable;
+import java.io.IOException;
+import java.util.*;
+import java.util.Map.Entry;
+
+import static com.google.common.collect.Lists.newArrayList;
+import static com.google.common.collect.Maps.newHashMap;
 
 /**
  * Reducer for the first cycle for DistEclat. It receives the complete set of frequent singletons from the different
@@ -98,33 +83,38 @@ import be.uantwerpen.adrem.hadoop.util.IntMatrixWritable;
  * }
  * </pre>
  */
-public class ItemReaderReducer extends Reducer<Text,IntArrayWritable,IntWritable,Writable> {
+public class ItemReaderReducer {
   
   public static final Text EmptyKey = new Text("");
   
   private int numberOfMappers;
   private int minSup;
   private final Map<Integer,MutableInt> itemSupports = newHashMap();
-  private MultipleOutputs<IntWritable,Writable> mos;
-  
-  private String shortFisFilename;
-  
-  @Override
-  public void setup(Context context) {
-    Configuration conf = context.getConfiguration();
-    
-    mos = new MultipleOutputs<IntWritable,Writable>(context);
-    numberOfMappers = parseInt(conf.get(NUMBER_OF_MAPPERS_KEY, "1"));
-    minSup = conf.getInt(MIN_SUP_KEY, -1);
-    
-    shortFisFilename = createPath(getJobAbsoluteOutputDir(context), OShortFIs, OShortFIs + "-1");
+
+  public ItemReaderReducerMultipleOutputs outputs = new ItemReaderReducerMultipleOutputs();
+  public List<ItemReaderReducerMultipleOutputs> outputAsList;
+
+  public void setup() {
+//    Configuration conf = context.getConfiguration();
+//    mos = new MultipleOutputs<>(context);
+    /* TODO: write proper config */
+//    numberOfMappers = parseInt(conf.get(NUMBER_OF_MAPPERS_KEY, "1"));
+//    minSup = conf.getInt(MIN_SUP_KEY, -1);
+    minSup = 1;
+    numberOfMappers = 10;
+//    shortFisFilename = createPath(getJobAbsoluteOutputDir(context), OShortFIs, OShortFIs + "-1");
   }
   
-  @Override
-  public void reduce(Text key, Iterable<IntArrayWritable> values, Context context)
+  public void reduce_(Text key, Iterable<int[]> values)
       throws IOException, InterruptedException {
-    Map<Integer,IntArrayWritable[]> map = getPartitionTidListsPerExtension(values);
-    reportItemsWithLargeSupport(map, context);
+
+    ArrayList<IntArrayWritable> valuesConverted = new ArrayList<>();
+    for(int[] v: values) {
+      System.out.println(Arrays.toString(v));
+      valuesConverted.add(IntArrayWritable.of(v));
+    }
+    Map<Integer,IntArrayWritable[]> map = getPartitionTidListsPerExtension(valuesConverted);
+    reportItemsWithLargeSupport(map);
   }
   
   private Map<Integer,IntArrayWritable[]> getPartitionTidListsPerExtension(Iterable<IntArrayWritable> values) {
@@ -138,6 +128,7 @@ public class ItemReaderReducer extends Reducer<Text,IntArrayWritable,IntWritable
         tidList = new IntArrayWritable[numberOfMappers];
         Arrays.fill(tidList, new IntArrayWritable(new IntWritable[0]));
         map.put(item, tidList);
+        System.out.println("clgt????????????????");
         itemSupports.put(item, new MutableInt());
       }
       IntWritable[] mapperTids = (IntWritable[]) tidList[mapperId].get();
@@ -151,7 +142,7 @@ public class ItemReaderReducer extends Reducer<Text,IntArrayWritable,IntWritable
     return map;
   }
   
-  private void reportItemsWithLargeSupport(Map<Integer,IntArrayWritable[]> map, Context context)
+  private void reportItemsWithLargeSupport(Map<Integer,IntArrayWritable[]> map)
       throws IOException, InterruptedException {
     for (Entry<Integer,IntArrayWritable[]> entry : map.entrySet()) {
       int support = 0;
@@ -167,25 +158,27 @@ public class ItemReaderReducer extends Reducer<Text,IntArrayWritable,IntWritable
       final IntArrayWritable[] tids = entry.getValue();
       
       // write the item to the short fis file
-      mos.write(new IntWritable(1), new Text(item + "(" + support + ")"), shortFisFilename);
-      
+//      mos.write(new IntWritable(1), new Text(item + "(" + support + ")"), shortFisFilename);
+      outputs.shortFis.add(new Tuple2<>(new IntWritable(1), new Text(item + "(" + support + ")")));
+
       // write the item with the tidlist
-      mos.write(OSingletonsTids, new IntWritable(item), new IntMatrixWritable(tids));
+//      mos.write(OSingletonsTids, new IntWritable(item), new IntMatrixWritable(tids));
+      outputs.OSingletonsTids.add(new Tuple2<>(new IntWritable(item), new IntMatrixWritable(tids)));
     }
   }
   
-  @Override
-  public void cleanup(Context context) throws IOException, InterruptedException {
+  public void cleanup() throws IOException, InterruptedException {
     List<Integer> sortedSingletons = getSortedSingletons();
     
-    context.setStatus("Writing Singletons");
+//    context.setStatus("Writing Singletons");
     writeSingletonsOrders(sortedSingletons);
     
-    context.setStatus("Distributing Singletons");
+//    context.setStatus("Distributing Singletons");
     writeSingletonsDistribution(sortedSingletons);
     
-    context.setStatus("Finished");
-    mos.close();
+//    context.setStatus("Finished");
+//    mos.close();
+    outputAsList = Collections.singletonList(outputs);
   }
   
   /**
@@ -221,7 +214,8 @@ public class ItemReaderReducer extends Reducer<Text,IntArrayWritable,IntWritable
     }
     
     Text order = new Text(builder.substring(0, builder.length() - 1));
-    mos.write(OSingletonsOrder, EmptyKey, order);
+//    mos.write(OSingletonsOrder, EmptyKey, order);
+    outputs.OSingletonsOrder.add(new Tuple2<>(EmptyKey, order));
   }
   
   /**
@@ -248,7 +242,8 @@ public class ItemReaderReducer extends Reducer<Text,IntArrayWritable,IntWritable
       
       mapperId.set("" + ix);
       assignedItems.set(sb.substring(0, sb.length() - 1));
-      mos.write(OSingletonsDistribution, mapperId, assignedItems);
+//      mos.write(OSingletonsDistribution, mapperId, assignedItems);
+      outputs.OSingletonsDistribution.add(new Tuple2<>(mapperId, assignedItems));
     }
   }
 }
