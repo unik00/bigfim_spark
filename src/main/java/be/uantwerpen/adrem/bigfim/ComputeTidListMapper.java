@@ -23,18 +23,25 @@ import static be.uantwerpen.adrem.util.FIMOptions.DELIMITER_KEY;
 import static org.apache.hadoop.filecache.DistributedCache.getLocalCacheFiles;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
+import org.apache.avro.generic.GenericData;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Mapper;
+import org.apache.spark.SparkConf;
+import org.apache.spark.api.java.JavaSparkContext;
+import org.apache.spark.SparkEnv;
 
 import be.uantwerpen.adrem.hadoop.util.IntArrayWritable;
 import be.uantwerpen.adrem.util.ItemSetTrie;
+import org.apache.spark.TaskContext;
+import scala.Tuple2;
 
 /**
  * Mapper class for the second phase of BigFIM. Each mapper receives a sub part (horizontal cut) of the dataset and
@@ -126,12 +133,14 @@ import be.uantwerpen.adrem.util.ItemSetTrie;
  * }
  * </pre>
  */
-public class ComputeTidListMapper extends Mapper<LongWritable,Text,Text,IntArrayWritable> {
+public class ComputeTidListMapper {
   
   private static int TIDS_BUFFER_SIZE = 100000;
   
   private final IntArrayWritable iaw;
-  
+
+  public List<Tuple2<Text, IntArrayWritable>> result = new ArrayList<>();
+
   private Set<Integer> singletons;
   private final ItemSetTrie countTrie;
   
@@ -152,11 +161,12 @@ public class ComputeTidListMapper extends Mapper<LongWritable,Text,Text,IntArray
     phase = 1;
   }
   
-  @Override
-  public void setup(Context context) throws IOException {
-    Configuration conf = context.getConfiguration();
+  public void setup(JavaSparkContext context) throws IOException {
+    SparkConf conf = context.getConf();
     delimiter = conf.get(DELIMITER_KEY, " ");
-    
+
+    // TODO: for BigFIM
+/*
     Path[] localCacheFiles = getLocalCacheFiles(conf);
     
     if (localCacheFiles != null) {
@@ -164,21 +174,29 @@ public class ComputeTidListMapper extends Mapper<LongWritable,Text,Text,IntArray
       phase = readCountTrieFromItemSetsFile(filename, countTrie) + 1;
       singletons = getSingletonsFromCountTrie(countTrie);
     }
-    id = context.getTaskAttemptID().getTaskID().getId();
+ */
+
+    id = (int)TaskContext.get().taskAttemptId();
   }
   
-  @Override
-  public void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
-    String line = value.toString();
-    List<Integer> items = convertLineToSet(line, phase == 1, singletons, delimiter);
-    reportItemTids(context, items);
-    counter++;
+//  public void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
+//    String line = value.toString();
+//    List<Integer> items = convertLineToSet(line, phase == 1, singletons, delimiter);
+//    reportItemTids(context, items);
+//    counter++;
+//  }
+
+  public void map_(List<String> values) throws IOException, InterruptedException {
+    for(String line: values) {
+      List<Integer> items = convertLineToSet(line, phase == 1, singletons, delimiter);
+      reportItemTids(items);
+      counter++;
+    }
   }
-  
-  @Override
-  public void cleanup(Context context) throws IOException, InterruptedException {
+
+  public void cleanup() throws IOException, InterruptedException {
     if (tidCounter != 0) {
-      doRecursiveReport(context, new StringBuilder(), 0, countTrie);
+      doRecursiveReport(new StringBuilder(), 0, countTrie);
     }
   }
   
@@ -188,7 +206,7 @@ public class ComputeTidListMapper extends Mapper<LongWritable,Text,Text,IntArray
     return iw;
   }
   
-  private void reportItemTids(Context context, List<Integer> items) throws IOException, InterruptedException {
+  private void reportItemTids(List<Integer> items) throws IOException, InterruptedException {
     if (items.size() < phase) {
       return;
     }
@@ -199,17 +217,16 @@ public class ComputeTidListMapper extends Mapper<LongWritable,Text,Text,IntArray
         tidCounter++;
       }
     } else {
-      doRecursiveTidAdd(context, items, 0, countTrie);
+      doRecursiveTidAdd(items, 0, countTrie);
     }
     if (tidCounter >= TIDS_BUFFER_SIZE) {
       System.out.println("Tids buffer reached, reporting " + tidCounter + " partial tids");
-      doRecursiveReport(context, new StringBuilder(), 0, countTrie);
+      doRecursiveReport(new StringBuilder(), 0, countTrie);
       tidCounter = 0;
     }
   }
   
-  private void doRecursiveTidAdd(Context context, List<Integer> items, int ix, ItemSetTrie trie)
-      throws IOException, InterruptedException {
+  private void doRecursiveTidAdd(List<Integer> items, int ix, ItemSetTrie trie) {
     for (int i = ix; i < items.size(); i++) {
       ItemSetTrie recTrie = trie.children.get(items.get(i));
       if (recTrie != null) {
@@ -217,13 +234,13 @@ public class ComputeTidListMapper extends Mapper<LongWritable,Text,Text,IntArray
           recTrie.addTid(counter);
           tidCounter++;
         } else {
-          doRecursiveTidAdd(context, items, i + 1, recTrie);
+          doRecursiveTidAdd(items, i + 1, recTrie);
         }
       }
     }
   }
   
-  private void doRecursiveReport(Context context, StringBuilder builder, int depth, ItemSetTrie trie)
+  private void doRecursiveReport(StringBuilder builder, int depth, ItemSetTrie trie)
       throws IOException, InterruptedException {
     int length = builder.length();
     for (ItemSetTrie recTrie : trie.children.values()) {
@@ -241,11 +258,12 @@ public class ComputeTidListMapper extends Mapper<LongWritable,Text,Text,IntArray
             iw[i1++] = new IntWritable(tid);
           }
           iaw.set(iw);
-          context.write(key, iaw);
+//          context.write(key, iaw);
+          result.add(new Tuple2<Text, IntArrayWritable>(key, iaw));
           tids.clear();
         } else {
-          builder.append(recTrie.id + " ");
-          doRecursiveReport(context, builder, depth + 1, recTrie);
+          builder.append(recTrie.id).append(" ");
+          doRecursiveReport(builder, depth + 1, recTrie);
         }
       }
       builder.setLength(length);
