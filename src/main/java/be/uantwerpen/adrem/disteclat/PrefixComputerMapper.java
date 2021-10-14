@@ -36,6 +36,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
+import be.uantwerpen.adrem.util.FIMOptions;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -92,22 +93,19 @@ import be.uantwerpen.adrem.hadoop.util.IntMatrixWritable;
  * }
  * </pre>
  */
-public class PrefixComputerMapper extends Mapper<LongWritable,Text,Text,IntMatrixWritable> {
+public class PrefixComputerMapper {
   
   private List<Item> singletons;
   private Map<Integer,Integer> orderMap;
   private int minSup;
   private int prefixLength;
   
-  @Override
-  public void setup(Context context) throws IOException {
+  public void setup(FIMOptions opt) throws IOException {
     try {
-      Configuration conf = context.getConfiguration();
-      
-      minSup = conf.getInt(MIN_SUP_KEY, -1);
-      prefixLength = conf.getInt(PREFIX_LENGTH_KEY, 1);
-      
-      Path[] localCacheFiles = getLocalCacheFiles(conf);
+      minSup = opt.minSup;
+      prefixLength = opt.prefixLength;
+
+//      Path[] localCacheFiles = getLocalCacheFiles(conf);
       
       for (Path path : localCacheFiles) {
         String pathString = path.toString();
@@ -126,15 +124,14 @@ public class PrefixComputerMapper extends Mapper<LongWritable,Text,Text,IntMatri
     }
   }
   
-  @Override
-  public void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
+  public void map_(LongWritable key, Text value) {
     String[] split = value.toString().split("\t");
     String items = split[1];
     
     // if the prefix length is 1, just report the singletons, otherwise use
     // Eclat to find X-FIs seeds
     EclatMiner miner = new EclatMiner();
-    SetReporter reporter = new PrefixItemTIDsReporter(context, prefixLength, singletons, orderMap);
+    SetReporter reporter = new PrefixItemTIDsReporter(prefixLength, singletons, orderMap);
     
     miner.setSetReporter(reporter);
     miner.setMaxSize(prefixLength);

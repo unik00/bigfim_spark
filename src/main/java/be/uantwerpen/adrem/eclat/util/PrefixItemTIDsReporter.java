@@ -35,14 +35,12 @@ import be.uantwerpen.adrem.hadoop.util.IntMatrixWritable;
 public class PrefixItemTIDsReporter implements SetReporter {
   
   public static final Text ShortKey = new Text("s");
-  private final Context context;
   private final int prefixLength;
   private final List<Item> singletons;
   private final Map<Integer,Integer> orderMap;
   
-  public PrefixItemTIDsReporter(Context context, int prefixLength, List<Item> singletons,
+  public PrefixItemTIDsReporter(int prefixLength, List<Item> singletons,
       Map<Integer,Integer> orderMap) {
-    this.context = context;
     this.prefixLength = prefixLength;
     this.singletons = singletons;
     this.orderMap = orderMap;

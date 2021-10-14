@@ -18,6 +18,7 @@ package be.uantwerpen.adrem.disteclat;
 
 import be.uantwerpen.adrem.hadoop.util.IntArrayWritable;
 import be.uantwerpen.adrem.hadoop.util.IntMatrixWritable;
+import be.uantwerpen.adrem.util.FIMOptions;
 import org.apache.commons.lang.mutable.MutableInt;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
@@ -94,14 +95,14 @@ public class ItemReaderReducer {
   public ItemReaderReducerMultipleOutputs outputs = new ItemReaderReducerMultipleOutputs();
   public List<ItemReaderReducerMultipleOutputs> outputAsList;
 
-  public void setup() {
+  public void setup(FIMOptions opt) {
 //    Configuration conf = context.getConfiguration();
 //    mos = new MultipleOutputs<>(context);
     /* TODO: write proper config */
 //    numberOfMappers = parseInt(conf.get(NUMBER_OF_MAPPERS_KEY, "1"));
 //    minSup = conf.getInt(MIN_SUP_KEY, -1);
-    minSup = 1;
-    numberOfMappers = 5;
+    minSup = opt.minSup;
+    numberOfMappers = opt.nrMappers;
 //    shortFisFilename = createPath(getJobAbsoluteOutputDir(context), OShortFIs, OShortFIs + "-1");
   }
   

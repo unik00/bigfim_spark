@@ -1,6 +1,7 @@
 package be.uantwerpen.adrem.disteclat;
 
 import be.uantwerpen.adrem.bigfim.ComputeTidListMapper;
+import be.uantwerpen.adrem.util.FIMOptions;
 import org.apache.hadoop.io.Text;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaPairRDD;
@@ -12,11 +13,15 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import static be.uantwerpen.adrem.hadoop.util.SplitByKTextInputFormat.NUMBER_OF_CHUNKS;
+import static be.uantwerpen.adrem.util.FIMOptions.*;
+
 public class DistEclatSparkDriver {
     public static void main(String[] args){
-        String input = args[0];
-        long minSup = Long.parseLong(args[1]);
-        long G = Long.parseLong(args[2]);
+        FIMOptions opt = new FIMOptions();
+        if (!opt.parseOptions(args)) {
+            opt.printHelp();
+        }
 
         SparkConf sparkConf = new SparkConf().setAppName("DistEclatSpark");
 //        .set("spark.driver.maxResultSize", "40g").set("spark.memory.storageFraction", "0.1").set("spark.driver.cores", "4");
@@ -25,17 +30,13 @@ public class DistEclatSparkDriver {
 
         JavaSparkContext sc = new JavaSparkContext(sparkConf);
 
-        JavaRDD<String> transactions = sc.textFile(input, 1).cache();
-
-//        for(String line: transactions.collect()){
-//            System.out.println(line);
-//        }
+        JavaRDD<String> transactions = sc.textFile(opt.inputFile, 1).cache();
 
         JavaRDD<List<String>> transactionsPart = transactions.glom();
         JavaPairRDD<String, int[]> computeTidListMapperResult = JavaPairRDD.fromJavaRDD(transactionsPart.mapPartitions(
                 iter -> {
                     ComputeTidListMapper mapper = new ComputeTidListMapper();
-                    mapper.setup();
+                    mapper.setup(opt);
                     while (iter.hasNext()){
                         mapper.map_(iter.next());
                     }
@@ -58,7 +59,7 @@ public class DistEclatSparkDriver {
                 groupByKey().mapPartitions(
                 iter -> {
                     ItemReaderReducer reducer = new ItemReaderReducer();
-                    reducer.setup();
+                    reducer.setup(opt);
                     while (iter.hasNext()){
                         Tuple2<String, Iterable<int[]>> pair = iter.next();
                         Text key = new Text(pair._1);

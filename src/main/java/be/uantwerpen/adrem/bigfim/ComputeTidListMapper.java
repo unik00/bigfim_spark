@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
+import be.uantwerpen.adrem.util.FIMOptions;
 import org.apache.avro.generic.GenericData;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
@@ -161,10 +162,10 @@ public class ComputeTidListMapper {
     phase = 1;
   }
   
-  public void setup() throws IOException {
+  public void setup(FIMOptions opt) throws IOException {
 //    SparkConf conf = context.getConf();
 //    delimiter = conf.get(DELIMITER_KEY, " ");
-    delimiter = " ";
+    delimiter = opt.delimiter;
     // TODO: for BigFIM
 /*
     Path[] localCacheFiles = getLocalCacheFiles(conf);
