@@ -5,6 +5,7 @@ import scala.Tuple2;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class ItemReaderReducerMultipleOutputs implements Serializable {
@@ -22,11 +23,18 @@ public class ItemReaderReducerMultipleOutputs implements Serializable {
 
     @Override
     public String toString() {
-        return "ItemReaderReducerMultipleOutputs{" +
+        String s = "ItemReaderReducerMultipleOutputs{" +
                 "OSingletonsOrder=" + OSingletonsOrder +
                 ", OSingletonsDistribution=" + OSingletonsDistribution +
-                ", OSingletonsTids=" + OSingletonsTids +
                 ", shortFis=" + shortFis +
-                '}';
+                ", OSingletonsTids=[";
+        for(Tuple2<Integer, int[][]> tp : OSingletonsTids){
+            s += "(";
+            s += tp._1.toString() + ", ";
+            s += Arrays.deepToString(tp._2);
+            s += ")";
+        }
+        s += "]}";
+        return s;
     }
 }
