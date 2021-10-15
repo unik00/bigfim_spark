@@ -25,7 +25,7 @@ public class DistEclatSparkDriver {
 
         JavaSparkContext sc = new JavaSparkContext(sparkConf);
 
-        JavaRDD<String> transactions = sc.textFile(input, 1).cache();
+        JavaRDD<String> transactions = sc.textFile(input, 2).cache();
 
 //        for(String line: transactions.collect()){
 //            System.out.println(line);
@@ -47,15 +47,16 @@ public class DistEclatSparkDriver {
         );
         for(Tuple2<String, Iterable<int[]>> clgt: computeTidListMapperResult.groupByKey().collect()){
             assert(clgt._2 != null);
+            System.out.println("abckey: " + clgt._1);
+            System.out.println("value: ");
             Iterable<int[]> values = clgt._2;
             for(int[] v: values){
-                System.out.println("wtf");
                 System.out.println(Arrays.toString(v));
             }
         }
 
         JavaRDD<ItemReaderReducerMultipleOutputs> itemReaderReducerResult = computeTidListMapperResult.
-                groupByKey().mapPartitions(
+                groupByKey(1).mapPartitions(
                 iter -> {
                     ItemReaderReducer reducer = new ItemReaderReducer();
                     reducer.setup();

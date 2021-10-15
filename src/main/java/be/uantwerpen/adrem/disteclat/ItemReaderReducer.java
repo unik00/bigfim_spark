@@ -101,7 +101,7 @@ public class ItemReaderReducer {
 //    numberOfMappers = parseInt(conf.get(NUMBER_OF_MAPPERS_KEY, "1"));
 //    minSup = conf.getInt(MIN_SUP_KEY, -1);
     minSup = 1;
-    numberOfMappers = 5;
+    numberOfMappers = 2;
 //    shortFisFilename = createPath(getJobAbsoluteOutputDir(context), OShortFIs, OShortFIs + "-1");
   }
   
@@ -118,6 +118,7 @@ public class ItemReaderReducer {
   }
   
   private Map<Integer,IntArrayWritable[]> getPartitionTidListsPerExtension(Iterable<IntArrayWritable> values) {
+    System.out.println("values: " + values);
     Map<Integer,IntArrayWritable[]> map = newHashMap();
     for (IntArrayWritable iaw : values) {
       Writable[] w = iaw.get();
@@ -170,6 +171,7 @@ public class ItemReaderReducer {
     List<Integer> sortedSingletons = getSortedSingletons();
     
 //    context.setStatus("Writing Singletons");
+    System.out.println("sorted singletons: " + sortedSingletons);
     writeSingletonsOrders(sortedSingletons);
     
 //    context.setStatus("Distributing Singletons");
@@ -208,8 +210,9 @@ public class ItemReaderReducer {
    */
   private void writeSingletonsOrders(List<Integer> sortedSingletons) throws IOException, InterruptedException {
     StringBuilder builder = new StringBuilder();
+    System.out.println("cai dell j v: " + sortedSingletons);
     for (Integer singleton : sortedSingletons) {
-      builder.append(singleton).append(" ");
+      builder.append(singleton + " ");
     }
     
     Text order = new Text(builder.substring(0, builder.length() - 1));

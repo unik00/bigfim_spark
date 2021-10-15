@@ -176,7 +176,7 @@ public class ComputeTidListMapper {
     }
  */
 
-    id = (int)TaskContext.get().taskAttemptId();
+    id = TaskContext.get().partitionId();
   }
   
 //  public void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
