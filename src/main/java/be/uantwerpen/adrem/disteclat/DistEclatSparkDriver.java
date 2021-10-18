@@ -9,7 +9,6 @@ import org.apache.spark.api.java.JavaSparkContext;
 import scala.Tuple2;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 public class DistEclatSparkDriver {
@@ -25,7 +24,7 @@ public class DistEclatSparkDriver {
 
         JavaSparkContext sc = new JavaSparkContext(sparkConf);
 
-        JavaRDD<String> transactions = sc.textFile(input, 1).cache();
+        JavaRDD<String> transactions = sc.textFile(input, 2).cache();
 
 //        for(String line: transactions.collect()){
 //            System.out.println(line);
@@ -55,7 +54,7 @@ public class DistEclatSparkDriver {
         }
 
         JavaRDD<ItemReaderReducerMultipleOutputs> itemReaderReducerResult = computeTidListMapperResult.
-                groupByKey().mapPartitions(
+                groupByKey(1).mapPartitions(
                 iter -> {
                     ItemReaderReducer reducer = new ItemReaderReducer();
                     reducer.setup();

@@ -101,7 +101,7 @@ public class ItemReaderReducer {
 //    numberOfMappers = parseInt(conf.get(NUMBER_OF_MAPPERS_KEY, "1"));
 //    minSup = conf.getInt(MIN_SUP_KEY, -1);
     minSup = 1;
-    numberOfMappers = 5;
+    numberOfMappers = 10;
 //    shortFisFilename = createPath(getJobAbsoluteOutputDir(context), OShortFIs, OShortFIs + "-1");
   }
   
